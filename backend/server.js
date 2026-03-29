@@ -7,7 +7,7 @@ import {Server} from 'socket.io'
 
 dotenv.config()
 
-// import authRoutes from './routes/authRoutes.js'
+import authRoutes from './routes/authRoutes.js'
 // import videoRoutes from './routes/videoRoutes.js'
 
 
@@ -25,7 +25,7 @@ app.use(cors())
 app.use(express.json())
 app.use('/uploads',express.static("uploads"))
 
-// app.use('/api/auth',authRoutes)
+app.use('/api/auth',authRoutes)
 // app.use('/api/videos',videoRoutes)
 
 mongoose.connect(process.env.MONGO_URI)
