@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API = axios.create({
-    baseURL: "http://localhost:3000/api"
+    baseURL: "https://videoapplication-t59d.onrender.com/api"
 })
 
 //Attaching token with the request
