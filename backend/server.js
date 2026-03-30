@@ -14,6 +14,13 @@ import videoRoutes from './routes/videoRoutes.js'
 const app = express()
 const server = http.createServer(app)
 
+app.use(
+  cors({
+    origin: "https://video-application-gilt.vercel.app",
+    credentials: true,
+  })
+);
+
 // Socket io
 export const io = new Server(server,{
     cors : {

@@ -17,7 +17,7 @@ export default function Navbar() {
         className="font-bold cursor-pointer"
         onClick={() => navigate("/dashboard")}
       >
-        Video Platform
+        Video Processing Platform
       </h1>
 
       <div className="flex items-center gap-4">
