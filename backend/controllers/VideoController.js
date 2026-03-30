@@ -57,7 +57,7 @@ const videoProcess = async (video)=>{
 
             let status = 'safe'
 
-            const flaggedWords = ['violence','drugs','adult']
+            const flaggedWords = ['violence','drugs','adult','bad']
             const isFlagged = flaggedWords.some(word => video.title.toLowerCase().includes(word))
 
             status = isFlagged ? 'flagged' : 'safe'
@@ -83,8 +83,20 @@ export const getVideos = async (req,res)=>{
             filter.status = status
         }
 
-        const videos = await Video.find(filter)
-                                  .sort({createdAt : -1})
+        let videos;
+
+
+        if (req.user.role === "viewer") {
+        videos = await Video.find({ status: "safe" })
+                            .sort({createdAt : -1})
+      } else {
+        videos = await Video.find(filter)
+                            .sort({createdAt : -1})
+      }
+
+      if (req.user.role === "admin") {
+        videos = await Video.find(); 
+      }
         
         return res.status(200).json({
             success : true,
@@ -95,48 +107,29 @@ export const getVideos = async (req,res)=>{
     }
 }
 
-const getAuthorizedVideo = async(req,res)=>{
-      try {
-        const {id} = req.params 
+const getAuthorizedVideo = async (req) => {
+  const { id } = req.params;
 
-        
-        if(!id){
-            return {error : res.status(400).json({
-                success : false,
-                message : "Video id is requred"
-            })}
-        }
+  if (!id) {
+    throw { status: 400, message: "Video id is required" };
+  }
 
-        const video = await Video.findById(id)
+  const video = await Video.findById(id);
 
-        if(!video){
-            return {error : res.status(404).json({
-                status : false,
-                message : "video not found"
-            })}
-        }
+  if (!video) {
+    throw { status: 404, message: "Video not found" };
+  }
 
-        // Authorization check
-        if(video.userId.toString() !== req.user.id){
-            return {error : res.status(403).json({
-                success : false,
-                message : "Unauthorized access"
-            })}
-        }
+//   if (video.userId.toString() !== req.user.id) {
+//     throw { status: 403, message: "Unauthorized access" };
+//   }
 
-        if(video.status === 'flagged'){
-            return {error : res.status(403).json({
-                success : false,
-                message : "Video is flagged"
-            })}
-        }
+  if (video.status === "flagged") {
+    throw { status: 403, message: "Video is flagged" };
+  }
 
-        return {video}
-    } catch (error) {
-
-        res.status(500).json({error : error.message})
-    }
-}
+  return video;
+};
 
 export const getVideoByID = async (req,res)=>{
     try {
@@ -154,72 +147,59 @@ export const getVideoByID = async (req,res)=>{
     }
 }
 
-export const videoStreaming = async (req,res)=>{
-    try {
+export const videoStreaming = async (req, res) => {
+  try {
+    const video = await getAuthorizedVideo(req);
 
-        const {video,error} = await getAuthorizedVideo(req,res)
+    const filePath = video.filePath;
 
-        if(error) return;
-
-
-        const filePath = video.filePath 
-
-        if (!fs.existsSync("uploads")) {
-            fs.mkdirSync("uploads");
-        }
-
-        if(!fs.existsSync(filePath)){
-            return res.status(404).json({
-                success : false,
-                message : "File not found on server"
-            })
-        }
-
-        const stat = fs.statSync(filePath)
-        const fileSize = stat.size 
-        const range = req.headers.range 
-        console.log('range',range)
-
-        if(!range){
-            return res.status(400).json({
-                success : false,
-                message : "Range required"
-            })
-        }
-
-        // parsing range 
-
-        const parts = range.replace(/bytes=/,"").split("-")
-        const start = parseInt(parts[0],10)
-        const end = parts[1] ? parseInt(parts[1],10) : fileSize - 1 
-
-        console.log("parts ",parts )
-        console.log("start ",start )
-        console.log("end ",end )
-
-        // validating range 
-
-        if(start >= fileSize || end >= fileSize){
-            return res.status(400).json({
-                success : false,
-                message : "Range not satisfiable"
-            })
-        }
-
-        const chunkSize = (end - start) + 1 
-
-        const file = fs.createReadStream(filePath,{start,end})
-
-        res.writeHead(206,{
-        "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-        "Accept-Ranges": "bytes",
-        "Content-Length": chunkSize,
-        "Content-Type": "video/mp4",
-        })
-
-        file.pipe(res)
-
-    } catch (error) {
-        res.status(500).json({error : error.message})
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found on server",
+      });
     }
-}
+
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+
+    const range = req.headers.range;
+
+    if (!range) {
+      return res.status(400).json({
+        success: false,
+        message: "Range required",
+      });
+    }
+
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (start >= fileSize || end >= fileSize) {
+      return res.status(416).json({
+        success: false,
+        message: "Range not satisfiable",
+      });
+    }
+
+    const chunkSize = end - start + 1;
+
+    const file = fs.createReadStream(filePath, { start, end });
+
+    res.writeHead(206, {
+      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": chunkSize,
+      "Content-Type": "video/mp4",
+    });
+
+    file.pipe(res);
+
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
+  }
+};

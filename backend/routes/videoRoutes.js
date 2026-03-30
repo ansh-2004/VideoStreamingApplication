@@ -9,7 +9,7 @@ const router = express.Router()
 router.post('/upload',protect,allowRoles("editor","admin"), upload.single("video"),videoUpload)
 
 router.get('/all',protect,getVideos)
-router.get('/stream/:id',protect,videoStreaming)
+router.get('/stream/:id',videoStreaming)
 router.get('/:id',protect,getVideoByID)
 
 export default router

@@ -8,7 +8,8 @@ import {AuthContext} from '../context/AuthContext'
 export default function Register(){
     const [form,setForm] = useState({
         email: "",
-        password: ""
+        password: "",
+        role : "editor"
     })
 
     const [error,setError] = useState("")
@@ -36,51 +37,79 @@ export default function Register(){
 
         try {
             const res = await API.post("/auth/register",form)
-
+            console.log('res',res)
             //auto login
             const loginRes = await API.post('/auth/login',form)
-
+            console.log('loginres',loginRes)
             login(loginRes.data)
 
             navigate("/dashboard")
 
         } catch (error) {
             console.log("error in register",error)
-            setError(error.response?.data?.msg || "Something went wrong")
+            setError(error.response?.data?.message || "Something went wrong")
         }
     }
 
-    return(
-        <div style={{padding: "20px"}}>
-            <h2>Register</h2>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type = "email"
-                    name= "email"
-                    placeholder="Email"
-                    onChange={handleChange}
-                > 
-                </input>
-                <br></br>
+return (
+  <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
 
-                <input
-                    type = "password"
-                    name = "password"
-                    placeholder="Password"
-                    onChange={handleChange}
-                >
-                </input>
-                <br></br>
+      <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
 
-                <button type="submit">Register</button>
+      <form onSubmit={handleSubmit} className="space-y-4">
 
-            </form>
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          onChange={handleChange}
+          className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400"
+        />
 
-            {error && <p style={{color:"red"}}>{error}</p>}
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          onChange={handleChange}
+          className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400"
+        />
 
-            <p>
-                Already have an account? <Link to="/"> Login</Link>
-            </p>
-        </div>
-    )
+        <select
+        name="role"
+        value={form.role}
+        onChange={handleChange}
+        className="w-full border border-gray-300 p-2 rounded"
+      >
+        <option value="viewer">Viewer</option>
+        <option value="editor">Editor</option>
+        <option value="admin">Admin</option>
+      </select>
+
+        <button
+          type="submit"
+          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition"
+        >
+          Register
+        </button>
+
+      </form>
+
+      {error && (
+        <p className="text-red-500 text-sm mt-3 text-center">{error}</p>
+      )}
+
+      <p className="text-sm mt-4 text-center">
+        Already have an account?{" "}
+        <span
+          onClick={() => navigate("/")}
+          className="text-blue-500 cursor-pointer"
+        >
+          Login
+        </span>
+      </p>
+
+    </div>
+  </div>
+);
 }
