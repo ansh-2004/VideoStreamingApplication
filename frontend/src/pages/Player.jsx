@@ -21,7 +21,7 @@ export default function Player() {
           <video
             controls
             className="w-full rounded"
-            src={`http://localhost:3000/api/videos/stream/${id}`}
+            src={`https://videoapplication-t59d.onrender.com/api/videos/stream/${id}`}
           />
         </div>
       </div>
